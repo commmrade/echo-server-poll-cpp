@@ -83,15 +83,15 @@ int main() {
                     auto& client = clients[polls[i].fd];
 
                     auto remove_client = [&clients, &polls](int idx, int fd) {
+                        std::swap(polls.back(), *(polls.begin() + idx));
                         clients.erase(polls[idx].fd);
-                        polls.erase(polls.begin() + idx);
+                        polls.erase(polls.end());
                         close(polls[idx].fd);
                     };
 
                     switch (client.state) {
                         case ClientState::IN: {
                             auto wr_bytes = write(client.fd, client.buffer.data() + client.write_bytes_total, client.buffer.size() - client.write_bytes_total);
-                            client.write_bytes_total += wr_bytes;
 
                             if (wr_bytes < 0) {
                                 --i;
@@ -100,6 +100,7 @@ int main() {
                                 close(polls[i].fd);
                                 throw std::runtime_error("Could not write");
                             }
+                            client.write_bytes_total += wr_bytes;
                             if (client.write_bytes_total >= client.buffer.size()) {
                                 client.buffer.clear();
                                 client.write_bytes_total = 0;
